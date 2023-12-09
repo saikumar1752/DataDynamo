@@ -1,0 +1,10 @@
+package data_structures
+
+const (
+	HEADER = 4
+	BTREE_PAGE_SIZE = 4096
+	BTREE_MAX_KEY_SIZE = 1000
+	BTREE_MAX_VAL_SIZE = 3000
+	BNODE_NODE=1
+	BNODE_LEAF=2
+)
