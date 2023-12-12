@@ -116,6 +116,10 @@ func (node *BNode) GetData(begin uint16, end uint16) []byte {
 	return node.data[begin:end]
 }
 
+func (node *BNode) GetAllData() []byte {
+	return node.data
+}
+
 
 
 func (node *BNode) NodeLookupLE(key []byte) uint16 {
