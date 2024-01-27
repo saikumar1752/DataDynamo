@@ -87,8 +87,8 @@ func treeInsert(tree *BTree, node data_structures.BNode, key []byte, val []byte)
 
 func nodeInsert(tree *BTree, new_node data_structures.BNode, node data_structures.BNode, idx uint16, key []byte, val []byte) {
 	kptr, _ := node.GetPtr(idx)
-	knode := tree.get(kptr)
-	tree.del(kptr)
+	knode := tree.Get(kptr)
+	tree.Del(kptr)
 
 	knode = treeInsert(tree, knode, key, val)
 	nsplit, splited := nodeSplit3(knode)
@@ -142,7 +142,7 @@ func nodeReplaceKidN(tree *BTree, new_node data_structures.BNode, old_node data_
 	nodeAppendRange(new_node, old_node, 0, 0, idx)
 	for i, node := range kids {
 		key, _ := node.GetKey((0))
-		nodeAppendKV(new_node, idx+uint16(i), tree.new(node), key, nil)
+		nodeAppendKV(new_node, idx+uint16(i), tree.New(node), key, nil)
 
 	}
 	nodeAppendRange(new_node, old_node, idx+inc, idx+1, old_node.Nkeys()-(idx+1))
@@ -166,7 +166,7 @@ func shouldMerge(tree *BTree, node data_structures.BNode, idx uint16, updated_no
 	}
 	if idx > 0{
 		node_ptr, _ := node.GetPtr(idx-1)
-		sibling := tree.get(node_ptr)
+		sibling := tree.Get(node_ptr)
 		merged := sibling.Nbytes()+updated_node.Nbytes()-data_structures.HEADER
 		if merged <= data_structures.BTREE_PAGE_SIZE{
 			return -1, sibling
@@ -174,7 +174,7 @@ func shouldMerge(tree *BTree, node data_structures.BNode, idx uint16, updated_no
 	}
 	if idx+1<node.Nkeys(){
 		node_ptr, _ := node.GetPtr(idx+1)
-		sibling := tree.get(node_ptr)
+		sibling := tree.Get(node_ptr)
 		merged := sibling.Nbytes()+updated_node.Nbytes()-data_structures.HEADER
 		if merged <= data_structures.BTREE_PAGE_SIZE{
 			return 1, sibling
@@ -192,12 +192,12 @@ func nodeReplace2KidN(new_node data_structures.BNode, old_node data_structures.B
 
 func nodeDelete(tree *BTree, node data_structures.BNode, idx uint16, key []byte) data_structures.BNode{
 	kptr, _ := node.GetPtr(idx)	
-	updated := treeDelete(tree, tree.get(kptr), key)
-	updated_data := updated.GetData()
+	updated := treeDelete(tree, tree.Get(kptr), key)
+	updated_data := updated.GetAllData()
 	if len(updated_data) ==0{
 		return data_structures.BNode{}
 	}
-	tree.del(kptr)
+	tree.Del(kptr)
 	var new_node data_structures.BNode
 	new_node.Initialize(make([]byte, data_structures.BTREE_PAGE_SIZE))
 	mergeDir, sibling := shouldMerge(tree, node, idx, updated)
@@ -207,20 +207,21 @@ func nodeDelete(tree *BTree, node data_structures.BNode, idx uint16, key []byte)
 		merged.Initialize(make([]byte, data_structures.BTREE_PAGE_SIZE))
 		nodeMerge(merged, sibling, updated)
 		sibling_ptr, _ := node.GetPtr(idx-1)
-		tree.del(sibling_ptr)
+		tree.Del(sibling_ptr)
 		merged_0_idx_key, _ := merged.GetKey(0)
-		nodeReplace2KidN(new_node, node, idx, tree.new(merged), merged_0_idx_key)
+		nodeReplace2KidN(new_node, node, idx, tree.New(merged), merged_0_idx_key)
 	case mergeDir>0: 
 		var merged data_structures.BNode
 		merged.Initialize(make([]byte, data_structures.BTREE_PAGE_SIZE))
 		nodeMerge(merged, updated, sibling)
 		sibling_ptr, _ := node.GetPtr(idx+1)
-		tree.del(sibling_ptr)
+		tree.Del(sibling_ptr)
 		merged_0_idx_key, _ := merged.GetKey(0)
-		nodeReplace2KidN(new_node, node, idx, tree.new(merged), merged_0_idx_key)
+		nodeReplace2KidN(new_node, node, idx, tree.New(merged), merged_0_idx_key)
 	case mergeDir ==0:
 		nodeReplaceKidN(tree, new_node, node, idx, updated)
 	}
+	return new_node
 }
 
 func treeDelete(tree *BTree, node data_structures.BNode, key []byte) data_structures.BNode{

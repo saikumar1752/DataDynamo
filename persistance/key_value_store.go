@@ -66,6 +66,7 @@ func (db *KV) pageGet(ptr uint64) data_structures.BNode{
 			offset := data_structures.BTREE_PAGE_SIZE*(ptr-start)
 			var page data_structures.BNode
 			page.Initialize(chunk[offset: offset+data_structures.BTREE_PAGE_SIZE])			
+			return page
 		}
 		start=end
 	}
@@ -96,4 +97,92 @@ func (db *KV) extendFile(npages int) error {
 		filepages += inc
 	}
 	fileSize := filepages + data_structures.BTREE_PAGE_SIZE
+	err := syscall.Fallocate(int(db.fp.Fd()), 0, 0, int64(fileSize))
+	if err != nil {
+		return fmt.Errorf("Fallocate: %w", err)
+	}
+	db.mmap.file+=	fileSize
+	return nil
+}
+
+func (db *KV) Open() error {
+	fp, err := os.OpenFile(db.Path, os.O_RDWR | os.O_CREATE, 0644)
+	if err != nil {
+		return fmt.Errorf("Open File: %w", err)
+	}
+	db.fp=fp
+	//create the initial mmap
+	sz, chunk, err := mmapInit(db.fp)
+	if err != nil {
+		goto fail
+	}
+	db.mmap.file = sz
+	db.mmap.total = len(chunk)
+	db.mmap.chunks = [][]byte{chunk}
+
+	db.tree.Get = db.pageGet
+	db.tree.New = db.pageNew
+	db.tree.Del = db.pageDel
+
+	err = masterLoad(db)
+	if err != nil {
+		goto fail
+	}
+
+	fail:
+		db.Close()
+		return fmt.Errorf("KV.Open: %w", err)
+}
+
+func (db *KV) Close(){
+	for _, chunk := range db.mmap.chunks{
+		syscall.Munmap(chunk)
+		
+	}
+	_ = db.fp.Close()
+}
+
+func (db *KV) Set(key []byte, val []byte) error {
+	db.tree.Insert(key, val)
+	return db.flushPages()
+}
+
+// func (db* KV) Del(key []byte)(bool, error){
+// 	deleted := db.tree.Delete(key)
+// 	return deleted, db.flushPages()
+// }
+
+func (db* KV) flushPages() error{
+	if err:= db.writePages(); err != nil {
+		return err
+	}
+	db.syncPages()
+	return nil
+}
+
+func (db* KV) writePages() error {
+	npages := int(db.page.flushed) + len(db.page.temp)
+	if err := db.extendFile(npages); err != nil {
+		return err
+	}
+	if err := 	extendMmap(db, npages); err != nil {
+		return err
+	}
+	for i, page := range db.page.temp{
+		ptr := db.page.flushed + uint64(i)
+		copy(db.pageGet(ptr).GetAllData(), page)
+	}
+	return nil
+}
+
+func (db *KV) syncPages() error {
+	if err := db.fp.Sync(); err != nil {
+		return fmt.Errorf("fsync: %w", err)
+	}
+	db.page.flushed += uint64(len(db.page.temp))
+	db.page.temp = db.page.temp[:0]
+	if err := db.fp.Sync(); err != nil {
+		return fmt.Errorf("fsync: %w", err)
+	}
+	return nil
 }
