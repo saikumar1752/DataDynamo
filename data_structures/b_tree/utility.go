@@ -2,6 +2,9 @@ package b_tree
 
 import (
 	"bytes"
+	"encoding/binary"
+	"fmt"
+
 	"github.com/saikumar1752/MyDB/data_structures"
 )
 
@@ -9,6 +12,8 @@ func leafInsert(new_node data_structures.BNode, old_node data_structures.BNode, 
 	new_node.SetHeader(data_structures.BNODE_LEAF, old_node.Nkeys()+1)
 	nodeAppendRange(new_node, old_node, 0, 0, idx)
 	nodeAppendKV(new_node, idx, 0, key, val)
+	store := old_node.Nkeys()
+	fmt.Println(store)
 	nodeAppendRange(new_node, old_node, idx+1, idx, old_node.Nkeys()-idx)
 }
 
@@ -16,6 +21,7 @@ func leafUpdate(new_node data_structures.BNode, old_node data_structures.BNode, 
 	new_node.SetHeader(data_structures.BNODE_LEAF, old_node.Nkeys())
 	nodeAppendRange(new_node, old_node, 0, 0, idx-1)
 	nodeAppendKV(new_node, idx, 0, key, val)
+	
 	nodeAppendRange(new_node, old_node, idx+1, idx+1, old_node.Nkeys()-idx)
 }
 
@@ -40,27 +46,22 @@ func nodeAppendRange(new_node data_structures.BNode, old_node data_structures.BN
 	// Set (key, value) pairs
 	old_begin, _ := old_node.KVPos(srcOld)
 	old_end, _ := old_node.KVPos(srcOld + n)
-	new_begin, _ := new_node.KVPos(dstNew)
-	new_node.CopyData(new_begin, old_node.GetData(old_begin, old_end))
+	ptr, _ := new_node.KVPos(dstNew)
+	copy(new_node.Data[ptr:], old_node.Data[old_begin:old_end])
 
+
+	
 }
 
 func nodeAppendKV(new_node data_structures.BNode, idx uint16, ptr uint64, key []byte, val []byte) {
 	new_node.SetPtr(idx, ptr)
 	pos, _ := new_node.KVPos(idx)
-
-	uint16ToByteArray := func(val uint16) []byte {
-		val_len := uint16(val)
-		byteArray := make([]byte, 2)
-		byteArray[0] = byte(val_len & 0xFF)        // Least significant byte
-		byteArray[1] = byte((val_len >> 8) & 0xFF) // Most significant byte
-		return byteArray
-	}
-
-	new_node.CopyData(pos+0, uint16ToByteArray(uint16(len(key))))
-	new_node.CopyData(pos+4, uint16ToByteArray(uint16(len(val))))
-	new_node.CopyData(pos+4+uint16(len(key)), val)
+	binary.LittleEndian.PutUint16(new_node.Data[pos+0:], uint16(len(key)))
+	binary.LittleEndian.PutUint16(new_node.Data[pos+2:], uint16(len(val)))
+	copy(new_node.Data[pos+4:], key)
+	copy(new_node.Data[pos+4+uint16(len(key)):], val)
 	next_offset, _ := new_node.GetOffset(idx)
+	fmt.Println(next_offset+4+uint16((len(key)+len(val))))
 	new_node.SetOffset(idx+1, next_offset+4+uint16((len(key)+len(val))))
 }
 

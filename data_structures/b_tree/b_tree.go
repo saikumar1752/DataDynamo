@@ -70,7 +70,7 @@ func (tree *BTree) Insert(key []byte, val []byte) {
 		Root.Initialize(make([]byte, data_structures.BTREE_PAGE_SIZE))
 		Root.SetHeader(data_structures.BNODE_LEAF, 2)
 		nodeAppendKV(Root, 0, 0, nil, nil)
-		nodeAppendKV(Root, 0, 0, key, val)
+		nodeAppendKV(Root, 1, 0, key, val)
 		tree.Root = tree.New(Root)
 		return
 	}
