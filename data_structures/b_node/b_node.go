@@ -17,6 +17,10 @@ func (node *BNode) InitializeWithSize(size int) {
 	node.data = make([]byte, size)
 }
 
+func (node *BNode) GetSize()int{
+	return len(node.data)
+}
+
 func (node *BNode) Btype() uint16 {
 	return binary.LittleEndian.Uint16(node.data)
 }

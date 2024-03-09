@@ -38,12 +38,6 @@ func LeafUpdate(new BNode, old BNode, idx uint16, key []byte, val []byte) {
 	NodeAppendRange(new, old, idx+1, idx+1, old.Nkeys()-idx-1)
 }
 
-func LeafDelete(new BNode, old BNode, idx uint16) {
-	new.SetHeader(data_structures.BNODE_LEAF, old.Nkeys()-1)
-	NodeAppendRange(new, old, 0, 0, idx)
-	NodeAppendRange(new, old, idx, idx+1, old.Nkeys()-(idx+1))
-}
-
 func NodeAppendRange(new BNode, old BNode, dstNew uint16, srcOld uint16, n uint16) {
 	if n <= uint16(0) {
 		return
@@ -74,4 +68,16 @@ func NodeAppendKV(new BNode, idx uint16, ptr uint64, key []byte, val []byte) BNo
 	copy(new.data[pos+4+uint16(len(key)):], val)
 	new.SetOffset(idx+1, new.GetOffset(idx)+4+uint16((len(key)+len(val))))
 	return new
+}
+
+func LeafDelete(new BNode, old BNode, idx uint16) {
+	new.SetHeader(data_structures.BNODE_LEAF, old.Nkeys()-1)
+	NodeAppendRange(new, old, 0, 0, idx)
+	NodeAppendRange(new, old, idx, idx+1, old.Nkeys()-(idx+1))
+}
+
+func NodeMerge(new BNode, left BNode, right BNode){
+	new.SetHeader(left.Btype(), left.Nkeys()+right.Nkeys())
+	NodeAppendRange(new, left, 0, 0, left.Nkeys())
+	NodeAppendRange(new, right, left.Nkeys(), 0, right.Nkeys())
 }
