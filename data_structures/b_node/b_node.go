@@ -1,5 +1,18 @@
 package b_node
 
+
+/*
+The structure of node in a b-tree
+| type | nkeys |  pointers   |   offsets  | key-values
+|  2B  |  2B   | nkeys * 8B  | nkeys * 2B | ...
+
+The structure of key-values
+| klen | vlen | key | val |
+|  2B  |  2B  | ... | ... |
+
+
+*/
+
 import (
 	"encoding/binary"
 	"github.com/saikumar1752/MyDB/data_structures"
@@ -80,6 +93,7 @@ func (node *BNode) GetVal(idx uint16) []byte {
 func (node *BNode) Nbytes() uint16 {
 	return node.KvPos(node.Nkeys())
 }
+
 
 func (node *BNode) GetData() []byte {
 	return node.data
