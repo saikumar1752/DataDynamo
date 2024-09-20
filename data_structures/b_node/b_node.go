@@ -30,6 +30,10 @@ func (node *BNode) InitializeWithSize(size int) {
 	node.data = make([]byte, size)
 }
 
+func (node * BNode) InitializeWithData(new_data []byte){
+	node.data = _data
+}
+
 func (node *BNode) GetSize()int{
 	return len(node.data)
 }

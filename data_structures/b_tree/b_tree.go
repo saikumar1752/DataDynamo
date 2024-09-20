@@ -135,6 +135,10 @@ func (tree *BTree) search(node b_node.BNode, key []byte) ([]byte, bool) {
 }
 
 func (tree *BTree) SearchKey(key []byte) ([]byte, bool) {
+	val, _ := tree.search(tree.Get(tree.root), key)
+	if val == nil {
+		return nil, false
+	}
 	return tree.search(tree.Get(tree.root), key)
 }
 
@@ -256,6 +260,24 @@ func (tree *BTree) countHelper(node b_node.BNode) int {
 
 func (tree *BTree) TotalKeys() int {
 	return tree.countHelper(tree.Get(tree.root))
+}
+
+func(tree * BTree) getMaxHeight(node b_node.BNode) int{
+	if node.Btype() == data_structures.BNODE_LEAF {
+		return 1
+	}
+	max_height := 1
+	for i := uint16(0); i < node.Nkeys(); i++ {
+		sub_tree_height := tree.getMaxHeight(tree.Get(node.GetPtr(i)))
+		if max_height<sub_tree_height+1{
+			max_height = sub_tree_height+1
+		}
+	}
+	return max_height
+}
+
+func (tree *BTree) MaxHeight() int{
+	return tree.getMaxHeight(tree.Get(tree.root))
 }
 
 func (tree *BTree) totalNodesHelper(node b_node.BNode) int {
