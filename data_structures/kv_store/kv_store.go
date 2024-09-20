@@ -17,8 +17,8 @@ type KV struct {
 		chunks [][]byte
 	}
 	page struct{
-		flushed uint64
-		temp [][]byte
+		flushed uint64 // database size in number of pages
+		temp [][]byte // newly allocated pages
 	}
 }
 
